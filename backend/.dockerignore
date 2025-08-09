@@ -1,0 +1,17 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,70 @@
+
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    container_name: electricity-db
+    environment:
+      POSTGRES_DB: electricity_app
+      POSTGRES_USER: electricity_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-electricity_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - electricity-network
+    restart: unless-stopped
+
+  # Node.js Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    container_name: electricity-backend
+    environment:
+      NODE_ENV: production
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: electricity_app
+      DB_USER: electricity_user
+      DB_PASSWORD: ${DB_PASSWORD:-electricity_password}
+      ELOVERBLIK_REFRESH_TOKEN: ${ELOVERBLIK_REFRESH_TOKEN}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-change-this}
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+    networks:
+      - electricity-network
+    restart: unless-stopped
+    volumes:
+      - ./backend/logs:/app/logs
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: electricity-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - electricity-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  electricity-network:
+    driver: bridge
